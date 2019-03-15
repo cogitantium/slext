@@ -1,6 +1,6 @@
 import { Slext } from './slext';
 import { Service } from 'typedi';
-import { File } from './file';
+import { File, FileTree } from './file';
 import * as $ from 'jquery';
 import { PageHook } from './pagehook.service';
 declare var _debug_editors: [AceAjax.Editor];
@@ -76,19 +76,31 @@ export class EditorCommands {
 
             let possibleMatches = text.match(/\{([a-zA-Z0-9_\.\/]+)\}/ig) || [];
             possibleMatches = possibleMatches.map(x => x.replace(/[{()}]/g, ''));
-            possibleMatches.forEach(match => {
+            
+            let currentFile = self.slext.currentFile();
+            
+            let root = self.slext.getFileTree();
+            let current = root.parse(currentFile.path).parent;
+            let nodesToTest : FileTree[] = [current, root];
+
+            for (let i = 0; i < possibleMatches.length; i++) {
+                let match = possibleMatches[i];
                 let firstPossibleStartPos = col - match.length;
                 let lastPossibleEndPos = col + match.length;
                 let sub = text.substring(firstPossibleStartPos, lastPossibleEndPos);
                 if (sub.includes(match)) {
                     //This is a possible file to search for
-                    let files = self.slext.getFiles().filter(f => f.path.includes(match));
-                    if (files.length) {
-                        $(files[0].handle).click();
+
+                    for (let n = 0; n < nodesToTest.length; n++) {
+                        let node = nodesToTest[n];
+                        let res = node.parse(match);
+                        if (res != null) {
+                            $(res.file.handle).click();
+                            return;
+                        }
                     }
                 }
-            });
-
+            }
         });
     }
 }

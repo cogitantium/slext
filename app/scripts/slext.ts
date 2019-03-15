@@ -1,14 +1,16 @@
 import Dispatcher from './dispatcher';
-import { File, FileUtils } from './file';
+import { File, FileUtils, FileTree } from './file';
 import * as $ from 'jquery';
 import { Container, Inject, Service } from 'typedi';
 import * as ace from 'ace-builds/src-noconflict/ace';
 import { PageHook } from './pagehook.service';
 import { Utils } from './utils';
 
+
 @Service()
 export class Slext extends Dispatcher {
     private _files: Array<File> = [];
+    private _filetree: FileTree;
     private static id = 0;
     private loaded = false;
 
@@ -87,6 +89,7 @@ export class Slext extends Dispatcher {
 
     public updateFiles() {
         this._files = this.indexFiles();
+        this._filetree = this.buildFileTree();
         this.dispatch('FilesChanged');
     }
 
@@ -115,5 +118,19 @@ export class Slext extends Dispatcher {
             return FileUtils.newFile(currentFile[0]);
         }
         return null;
+    }
+
+    private buildFileTree() {
+        let self = this;
+        let rootEntries = $(".file-tree-list>file-entity");
+        let root = new FileTree(null, "", [], true, null);
+        let rootFiles : FileTree[] = rootEntries.toArray().map(el => FileTree.newFileTree(el, root));
+        root.children = rootFiles;
+
+        return root;
+    }
+
+    public getFileTree(): FileTree {
+        return this._filetree;
     }
 }
